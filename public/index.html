@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>List of Person</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    table {
+      width: 100%;
+      margin: 20px 0;
+      border-collapse: collapse;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    td{
+      text-align: center;
+    }
+
+    th {
+      background-color: #3498db;
+      color: white;
+      text-align: center;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    input{
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 95%;
+      font-size: 14px;
+      
+    }
+    input:fucus {
+      outline: none;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button[type="submit"] {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    .update-btn {
+      background-color: #f39c12;
+      color: white;
+    }
+
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    form input {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+    <h2>Add a Person</h2>
+    <form id="productForm">
+      <input type="text" name="name" placeholder="Name" required />
+      <input type="text" name="surname" placeholder="Surname" required />
+      <input type="number" name="age" placeholder="Age" required />
+      <br/>
+      <button type="submit">Add</button>
+    </form>
+    
+  <h1>List of Person</h1>
+  <table id="productTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Age</th>
+        <th>Proccess</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/products';
+
+    async function fetchProducts() {
+      try {
+        const res = await fetch(API_URL);
+        const products = await res.json();
+        const tbody = document.querySelector('#productTable tbody');
+        tbody.innerHTML = '';
+
+        products.forEach(product => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><input value="${product.name}" data-id="${product._id}" data-field="name" /></td>
+            <td><input value="${product.surname}" data-id="${product._id}" data-field="surname" /></td>
+            <td><input type="number" value="${product.age}" data-id="${product._id}" data-field="age" /></td>
+            <td>
+              <button class="update-btn" onclick="updateProduct('${product._id}')">Update</button>
+              <button class="delete-btn" onclick="deleteProduct('${product._id}')">Remove</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error('Veriler alınamadı:', err);
+      }
+    }
+
+    async function addProduct(e) {
+      e.preventDefault();
+      const form = e.target;
+      const product = {
+        name: form.name.value.trim(),
+        surname: form.surname.value.trim(),
+        age: parseInt(form.age.value)
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product)
+        });
+
+        if (!res.ok) throw new Error('Sunucu hatası');
+        form.reset();
+        fetchProducts();
+      } catch (err) {
+        console.error('Ekleme hatası:', err);
+      }
+    }
+
+    async function deleteProduct(id) {
+      try {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        fetchProducts();
+      } catch (err) {
+        console.error('Silme hatası:', err);
+      }
+    }
+
+    async function updateProduct(id) {
+      const inputs = document.querySelectorAll(`input[data-id='${id}']`);
+      const updatedData = {};
+
+      inputs.forEach(input => {
+        updatedData[input.dataset.field] = input.value;
+      });
+
+      try {
+        await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+        fetchProducts();
+      } catch (err) {
+        console.error('Güncelleme hatası:', err);
+      }
+    }
+
+    document.getElementById('productForm').addEventListener('submit', addProduct);
+    fetchProducts();
+  </script>
+
+</body>
+</html>
